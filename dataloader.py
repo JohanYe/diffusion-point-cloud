@@ -187,7 +187,9 @@ class Teeth_Dataset(Dataset):
         #                          point_normals=point_normals.unsqueeze(0).numpy())
 
         return dict(pointcloud=point_cloud,
-                    ids=self.data[item]['id'])  # .split("_")[-1] + "_" + self.data[item]['id'].split("_")[1])
+                    ids=self.data[item]['id'],
+                    shift=self.all_points_mean,
+                    scale=self.all_points_std)  # .split("_")[-1] + "_" + self.data[item]['id'].split("_")[1])
 
 
 class Baseline_Dataset(data.Dataset):
