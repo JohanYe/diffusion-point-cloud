@@ -4,6 +4,7 @@ import math
 import argparse
 import torch
 from tqdm.auto import tqdm
+import dataloader
 
 from utils.dataset import *
 from utils.misc import *
@@ -41,11 +42,15 @@ parser.add_argument('--save_dir', type=str, default='./results')
 parser.add_argument('--device', type=str, default='cuda')
 # Datasets and loaders
 parser.add_argument('--dataset_path', type=str, default='./data/shapenet.hdf5')
-parser.add_argument('--batch_size', type=int, default=128)
+parser.add_argument('--batch_size', type=int, default=32)
 # Sampling
 parser.add_argument('--sample_num_points', type=int, default=2048)
 parser.add_argument('--normalize', type=str, default='shape_bbox', choices=[None, 'shape_unit', 'shape_bbox'])
 parser.add_argument('--seed', type=int, default=9988)
+parser.add_argument('--x_train', required=False, help='Path to X_train folder', dest="x_train")
+parser.add_argument('--x_test', required=False, help='Path to X_est folder', dest="x_test")
+parser.add_argument("--unn", required=False, default="3", help="unns to include, separate with comma and no space")
+parser.add_argument("--point_normals", action="store_true", default=False, help="If point normals should be included in data")
 args = parser.parse_args()
 
 

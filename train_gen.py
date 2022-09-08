@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader
 from torch.nn.utils import clip_grad_norm_
 from tqdm.auto import tqdm
 
+import dataloader
 from utils.dataset import *
 from utils.misc import *
 from utils.data import *
@@ -39,8 +40,8 @@ parser.add_argument('--spectral_norm', type=eval, default=False, choices=[True, 
 parser.add_argument('--dataset_path', type=str, default='./data/shapenet.hdf5')
 parser.add_argument('--categories', type=str_list, default=['airplane'])
 parser.add_argument('--scale_mode', type=str, default='shape_unit')
-parser.add_argument('--train_batch_size', type=int, default=128)
-parser.add_argument('--val_batch_size', type=int, default=64)
+parser.add_argument('--train_batch_size', type=int, default=32)
+parser.add_argument('--val_batch_size', type=int, default=32)
 
 # Optimizer and scheduler
 parser.add_argument('--lr', type=float, default=2e-3)
@@ -60,6 +61,10 @@ parser.add_argument('--val_freq', type=int, default=1000)
 parser.add_argument('--test_freq', type=int, default=30*THOUSAND)
 parser.add_argument('--test_size', type=int, default=400)
 parser.add_argument('--tag', type=str, default=None)
+parser.add_argument('--x_train', required=False, help='Path to X_train folder', dest="x_train")
+parser.add_argument('--x_test', required=False, help='Path to X_est folder', dest="x_test")
+parser.add_argument("--unn", required=False, default="3", help="unns to include, separate with comma and no space")
+parser.add_argument("--point_normals", action="store_true", default=False, help="If point normals should be included in data")
 args = parser.parse_args()
 seed_all(args.seed)
 
@@ -79,18 +84,33 @@ logger.info(args)
 # Datasets and loaders
 logger.info('Loading datasets...')
 
-train_dset = ShapeNetCore(
-    path=args.dataset_path,
-    cates=args.categories,
-    split='train',
-    scale_mode=args.scale_mode,
-)
-val_dset = ShapeNetCore(
-    path=args.dataset_path,
-    cates=args.categories,
-    split='val',
-    scale_mode=args.scale_mode,
-)
+unn_list = args.unn.split(",") if args.unn != "all" else "all"
+teeth_std = 8.18936 if unn_list == ['3'] else 8.27396
+train_dset = dataloader.Teeth_Dataset(unn=unn_list,
+                                     folder_path=args.x_train,
+                                     is_train=True,
+                                     global_pc_std=teeth_std,  # 2*2.185 # global std(norm(pc)) from fc_train_unn_3
+                                     args=args)
+val_dset = dataloader.Teeth_Dataset(unn=unn_list,
+                                    folder_path=args.x_test,
+                                    is_train=False,
+                                    global_pc_std=teeth_std,  # 2.185, # global std(norm(pc)) from fc_train_unn_3
+                                    args=args)
+
+# train_dset = ShapeNetCore(
+#     path=args.dataset_path,
+#     cates=args.categories,
+#     split='train',
+#     scale_mode=args.scale_mode,
+#     transform=transform,
+# )
+# val_dset = ShapeNetCore(
+#     path=args.dataset_path,
+#     cates=args.categories,
+#     split='val',
+#     scale_mode=args.scale_mode,
+#     transform=transform,
+# )
 train_iter = get_data_iterator(DataLoader(
     train_dset,
     batch_size=args.train_batch_size,
